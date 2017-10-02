@@ -429,7 +429,11 @@ def conv_forward_naive(x, w, b, conv_param):
   
   for i in range(H_tag):
     for j in range(W_tag):
-        x_pad_mask = x_pad[:,:,i*stride:i*stride+HH,j*stride:j*stride+WW] 
+        i_start = i * stride
+        i_end = i_start + HH
+        j_start = j * stride
+        j_end = j_start + WW
+        x_pad_mask = x_pad[:, :, i_start:i_end, j_start:j_end]
         for k in range(F):
           b_k = b[k]
           conv_scalar_mul = x_pad_mask * w[k, :, :, :]
@@ -511,13 +515,14 @@ def conv_backward_naive(dout, cache):
           for k in range(F): #compute dw
               dout_k_i_j = dout[:, k, i, j]
 
-              # so boradcat will work
+              # reshape so boradcast will work
               dout_k_i_j = dout_k_i_j.reshape(dout_k_i_j.shape[0],1,1,1)
               scalar_mul = x_pad_mask * dout_k_i_j
-              dw[k ,: ,: ,:] += np.sum(
+              res = np.sum(
                 scalar_mul,
                 axis=0,
               )
+              dw[k ,: ,: ,:] += res
           for n in range(N): #compute dx_pad
               ndx_sum = np.sum(
                 (w[:, :, :, :] * (dout[n, :, i, j])[:,np.newaxis ,np.newaxis, np.newaxis]),
@@ -535,6 +540,56 @@ def conv_backward_naive(dout, cache):
   #############################################################################
   return dx, dw, db
 
+
+from .im2col import im2col_indices, col2im_indices
+
+# def conv_forward(X, W, b, stride=1, padding=1):
+def conv_forward_naive_(x, w, b, conv_param):
+  N, C, H, W   = x.shape
+  F, _, HH, WW = w.shape
+  stride, pad  = conv_param['stride'], conv_param['pad']
+
+  # Dimensionality check
+  assert ( H + 2 * pad - HH) % stride == 0, 'width doesn\'t work with current paramter setting'
+  assert ( W + 2 * pad - WW) % stride == 0, 'height doesn\'t work with current paramter setting'
+
+  # Initialize output
+  out_H = ( H + 2 * pad - HH) / stride + 1
+  out_W = ( W + 2 * pad - WW) / stride + 1
+  out_H, out_W = int(out_H), int(out_W)
+  out = np.zeros( (N, F, out_H, out_W), dtype=x.dtype ) 
+
+  from .im2col import im2col_indices
+
+  x_cols = im2col_indices(x, HH, WW, padding=pad, stride=stride)
+
+  res = w.reshape((w.shape[0], -1)).dot(x_cols) + b[:, np.newaxis]
+
+  out = res.reshape((F, out_H, out_W, N))
+  out = out.transpose(3, 0, 1, 2)
+
+  cache = (x, w, b, conv_param, x_cols)
+  return out, cache
+
+
+def conv_backward_naive_(dout, cache):
+    X, W, b, conv_param, X_col = cache
+    stride, pad = conv_param['stride'], conv_param['pad']
+    n_filter, d_filter, h_filter, w_filter = W.shape
+
+    db = np.sum(dout, axis=(0, 2, 3))
+    db = db.reshape(n_filter, -1)
+
+    dout_reshaped = dout.transpose(1, 2, 3, 0).reshape(n_filter, -1)
+    dW = dout_reshaped @ X_col.T
+    dW = dW.reshape(W.shape)
+
+    W_reshape = W.reshape(n_filter, -1)
+    dX_col = W_reshape.T @ dout_reshaped
+    dX = col2im_indices(dX_col, X.shape, h_filter, w_filter,
+                        padding=pad, stride=stride)
+
+    return dX, dW, db
 
 def max_pool_forward_naive(x, pool_param):
   """
