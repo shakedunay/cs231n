@@ -513,11 +513,11 @@ def conv_backward_naive(dout, cache):
 
           x_pad_mask = x_pad[:, :, i_start:i_end, j_start:j_end]
           for k in range(F): #compute dw
-              dout_k_i_j = dout[:, k, i, j]
+              local_dout = dout[:, k, i, j]
 
               # reshape so boradcast will work
-              dout_k_i_j = dout_k_i_j.reshape(dout_k_i_j.shape[0],1,1,1)
-              scalar_mul = x_pad_mask * dout_k_i_j
+              local_dout = local_dout.reshape(local_dout.shape[0],1,1,1)
+              scalar_mul = x_pad_mask * local_dout
               res = np.sum(
                 scalar_mul,
                 axis=0,
