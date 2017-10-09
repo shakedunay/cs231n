@@ -664,17 +664,28 @@ def conv_forward_naive(x, w, b, conv_param):
   # TODO: Implement the convolutional forward pass.                           #
   # Hint: you can use the function np.pad for padding.                        #
   #############################################################################
-  x_new = np.lib.pad(x, ((1,1)), 'constant', constant_values=(0))
-  x_new = x_new[1:-1,1:-1,:,:] #after zero padding
+  # x_new = np.lib.pad(x, ((1,1)), 'constant', constant_values=(0))
+  # x_new = x_new[1:-1,1:-1,:,:] #after zero padding
 
+  x_new = np.pad(
+    array=x,
+    pad_width=[
+        (0,), # no pad for N 
+        (0,), # no pad for C
+        (pad,),
+        (pad,),
+    ],
+    mode='constant',
+    constant_values=0,
+  )
   for n in range(0,N):
       for f in range(0,F): # on the filter dimension
-          for k in range(0,W_dash): #along width of out
-            for l in range(0,H_dash):  #along height of out
+          for j in range(0,W_dash): #along width of out
+            for i in range(0,H_dash):  #along height of out
               for c in range(0,C): # on the number of channels
-                  out[n,f,k,l] += np.sum(x_new[n,c,k*stride:k*stride+WW,l*stride:l*stride+HH]*w[f,c,:,:])
-              # out[:,f,k,l] = out[:,f,k,l] / (WW*HH*C)
-              out[n,f,k,l] += b[f]
+                  out[n,f,j,i] += np.sum(x_new[n,c,j*stride:j*stride+WW,i*stride:i*stride+HH]*w[f,c,:,:])
+              # out[:,f,j,l] = out[:,f,j,l] / (WW*HH*C)
+              out[n,f,j,i] += b[f]
 
   #############################################################################
   #                             END OF YOUR CODE                              #
