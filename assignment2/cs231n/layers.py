@@ -678,14 +678,22 @@ def conv_forward_naive(x, w, b, conv_param):
     mode='constant',
     constant_values=0,
   )
-  for n in range(0,N):
-      for f in range(0,F): # on the filter dimension
-          for j in range(0,W_dash): #along width of out
-            for i in range(0,H_dash):  #along height of out
-              for c in range(0,C): # on the number of channels
-                  out[n,f,j,i] += np.sum(x_new[n,c,j*stride:j*stride+WW,i*stride:i*stride+HH]*w[f,c,:,:])
-              # out[:,f,j,l] = out[:,f,j,l] / (WW*HH*C)
-              out[n,f,j,i] += b[f]
+  for n in range(N):
+    for k in range(F):
+      for j in range(W_dash):
+        for i in range(H_dash):
+          for c in range(C):
+            x_map = x_new[
+              n,
+              c,
+              j*stride:j*stride+WW,
+              i*stride:i*stride+HH,
+            ]
+            w_map = w[k,c,:,:]
+            out[n,k,j,i] += np.sum(
+              x_map*w_map,
+            )
+          out[n,k,j,i] += b[k]
 
   #############################################################################
   #                             END OF YOUR CODE                              #
