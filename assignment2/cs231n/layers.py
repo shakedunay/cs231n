@@ -502,21 +502,13 @@ def conv_backward_naive(dout, cache):
             i_start = i * stride
             i_end = i_start + HH
             
+            # dw derivative
             x_map = x_new[n,c,i_start:i_end, j_start:j_end]
             dw[k,c,:,:] += dout_cell * x_map
-  
-  for n in range(N):
-    for k in range(F):
-      for i in range(H_dash):          
-        for j in range(W_dash):
-          for c in range(C):
-            j_start = j*stride
-            j_end = j_start + WW
-            i_start = i * stride
-            i_end = i_start + HH
+
+            # dx derivative
             kernel = w[k,c,:,:]
-            dout_cell = dout[n,k,i,j]
-            dx[n, c, i_start:i_end, j_start:j_end] += dout_cell * kernel
+            dx[n, c, i_start:i_end, j_start:j_end] += dout_cell * kernel  
 
   dx = dx[:,:,1:-1,1:-1]
   db = np.sum(np.transpose(dout, [1,0,2,3]), axis = (1,2,3))
