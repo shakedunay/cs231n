@@ -679,6 +679,7 @@ def conv_forward_naive(x, w, b, conv_param):
     for k in range(F):
       for i in range(H_dash):
         for j in range(W_dash):
+          current_sum = 0
           for c in range(C):
             j_start = j * stride
             j_end = j_start + WW
@@ -687,15 +688,16 @@ def conv_forward_naive(x, w, b, conv_param):
 
             x_new_window = x_new[
               n,
-              c,
+              c,  
               i_start:i_end,
               j_start:j_end,
             ]
             kernel = w[k,c,:,:]
-            out[n,k,i,j] += np.sum(
-               x_new_window * kernel,
+            current_sum += np.sum(
+              x_new_window * kernel,
             )
-          out[n,k,i,j] += b[k]
+
+          out[n,k,i,j] = current_sum + b[k]
 
   #############################################################################
   #                             END OF YOUR CODE                              #
