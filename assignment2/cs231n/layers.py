@@ -513,8 +513,8 @@ def conv_backward_naive(dout, cache):
   dx = dx_pad[
     :,
     :,
-    pad:-pad,
-    pad:-pad
+    pad:-pad, # remove padding
+    pad:-pad # remove padding
   ]
   db = np.sum(
       dout,
