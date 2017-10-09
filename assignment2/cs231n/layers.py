@@ -483,10 +483,10 @@ def conv_backward_naive(dout, cache):
   (F, C, HH, WW) = w.shape
   stride = conv_param['stride']
   pad    = conv_param['pad']
-  H_dash = 1 + (H + 2 * pad - HH) / stride
-  H_dash = int(H_dash)
-  W_dash = 1 + (W + 2 * pad - WW) / stride
-  W_dash = int(W_dash)
+  H_tag = 1 + (H + 2 * pad - HH) / stride
+  H_tag = int(H_tag)
+  W_tag = 1 + (W + 2 * pad - WW) / stride
+  W_tag = int(W_tag)
   
   dw = np.zeros(w.shape)
   x_new = np.pad(
@@ -507,23 +507,24 @@ def conv_backward_naive(dout, cache):
   #############################################################################
   for n in range(N):
     for k in range(F):
-      for i in range(H_dash):
-        for j in range(W_dash):
+      for i in range(H_tag):
+        for j in range(W_tag):
           for c in range(C):      
             dout_cell = dout[n, k, i, j]
             j_start = j * stride
             j_end = j_start + WW
             i_start = i * stride
             i_end = i_start + HH
-            map_slice = np.s_[n, c, i_start:i_end, j_start:j_end]
+            sliding_window = np.s_[n, c, i_start:i_end, j_start:j_end]
+            kernel_slice = np.s_[k, c, :, :]
 
             # dw derivative
-            x_map = x_new[map_slice]
-            dw[k, c, :, :] += dout_cell * x_map
+            x_window = x_new[sliding_window]
+            dw[kernel_slice] += x_window * dout_cell
 
             # dx derivative
-            w_kernel = w[k,c,:,:]
-            dx_pad[map_slice] += dout_cell * w_kernel
+            w_kernel = w[kernel_slice]
+            dx_pad[sliding_window] += w_kernel * dout_cell
 
   dx = dx_pad[
     :,
@@ -563,22 +564,42 @@ def max_pool_forward_naive(x, pool_param):
   #############################################################################
   N, C, H, W = x.shape
   HH, WW, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
-  H_out = (H-HH)/stride+1
-  H_out = int(H_out)
-  W_out = (W-WW)/stride+1
-  W_out = int(W_out)
-  out = np.zeros((N,C,H_out,W_out))
-  for i in range(H_out):
-      for j in range(W_out):
-          x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
-          out[:,:,i,j] = np.max(x_masked, axis=(2,3)) 
-  #pass
+  H_tag = 1 + (H - HH) / stride
+  H_tag = int(H_tag)
+  W_tag = 1 + (W - WW) / stride
+  W_tag = int(W_tag)
+  out = np.zeros(
+    (
+      N,
+      C,
+      H_tag,
+      W_tag,
+    )
+  )
+  mask = np.zeros_like(x)
+  for n in range(N):
+    for c in range(C):
+      for i in range(H_tag):
+        for j in range(W_tag):
+          i_start = i * stride
+          i_end = i_start + HH
+          j_start = j * stride
+          j_end = j_start + WW
+          x_masked = x[
+            n,
+            c,
+            i_start:i_end,
+            j_start:j_end,
+          ]
+          out[n, c, i, j] = x_masked.max()
+          window_max_i, window_max_j = np.unravel_index(x_masked.argmax(), x_masked.shape)
+          mask[n, c, i_start + window_max_i, j_start + window_max_j] = 1
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
-  cache = (x, pool_param)
+  cache = (x, mask, pool_param)
   return out, cache
-
 
 def max_pool_backward_naive(dout, cache):
   """
@@ -595,19 +616,51 @@ def max_pool_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the max pooling backward pass                             #
   #############################################################################
-  x, pool_param = cache
+  x, mask, pool_param = cache
   N, C, H, W = x.shape
   HH, WW, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
   H_out = (H-HH)/stride+1
+  H_out = int(H_out)
   W_out = (W-WW)/stride+1
+  W_out = int(W_out)
   dx = np.zeros_like(x)
+
+  # where = np.nonzero(mask!=0)
+  # dx[where[0], where[1], where[2], where[3]] = np.ravel(dout)
   
-  for i in xrange(H_out):
-     for j in xrange(W_out):
-        x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
+  for i in range(H_out):
+     for j in range(W_out):
+        i_start = i * stride
+        i_end = i_start + HH
+        j_start = j * stride
+        j_end = j_start + WW
+        x_masked = x[
+          :,
+          :,
+          i_start:i_end,
+          j_start:j_end,
+        ]
         max_x_masked = np.max(x_masked,axis=(2,3))
         temp_binary_mask = (x_masked == (max_x_masked)[:,:,None,None])
-        dx[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW] += temp_binary_mask * (dout[:,:,i,j])[:,:,None,None]
+        dx[:,:,i_start: i_end, j_start: j_end] += temp_binary_mask * (dout[:,:,i,j])[:,:,None,None]
+  # for n in range(N):
+  #   for c in range(C):
+  #     for i in range(H_out):
+  #       for j in range(W_out):
+  #         idx = np.s_[n, c, i, j]
+  #         if mask[idx]:
+  #           dx[idx] += x[idx]
+          # i_start = i * stride
+          # i_end = i_start + HH
+          # j_start = j * stride
+          # j_end = j_start + HH
+          # n,c,
+  # for i in range(H_out):
+  #    for j in range(W_out):
+  #       x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
+  #       max_x_masked = np.max(x_masked,axis=(2,3))
+  #       temp_binary_mask = (x_masked == (max_x_masked)[:,:,None,None])
+  #       dx[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW] += temp_binary_mask * (dout[:,:,i,j])[:,:,None,None]
   #pass
   #############################################################################
   #                             END OF YOUR CODE                              #
