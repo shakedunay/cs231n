@@ -474,115 +474,52 @@ def conv_forward_naive(x, w, b, conv_param):
 def conv_backward_naive(dout, cache):
   """
   A naive implementation of the backward pass for a convolutional layer.
-
   Inputs:
   - dout: Upstream derivatives.
   - cache: A tuple of (x, w, b, conv_param) as in conv_forward_naive
-
   Returns a tuple of:
   - dx: Gradient with respect to x
   - dw: Gradient with respect to w
   - db: Gradient with respect to b
   """
   dx, dw, db = None, None, None
+  (x, w, b, conv_param) = cache
+  (N, C, H, W)   = x.shape
+  (F, C, HH, WW) = w.shape
+  stride = conv_param['stride']
+  pad    = conv_param['pad']
+  H_dash = 1 + (H + 2 * pad - HH) / stride
+  H_dash = int(H_dash)
+  W_dash = 1 + (W + 2 * pad - WW) / stride
+  W_dash = int(W_dash)
+  # out = np.zeros((N, F, H_dash, W_dash))
+  dw = np.zeros(w.shape)
+  x_new = np.lib.pad(x, ((1,1)), 'constant', constant_values=(0))
+  x_new = x_new[1:-1,1:-1,:,:] #after zero padding
+  dx = np.zeros(x_new.shape)
+
   #############################################################################
   # TODO: Implement the convolutional backward pass.                          #
   #############################################################################
-  x, w, b, conv_param = cache
-  
-  N, C, H, W = x.shape
-  F, _, HH, WW = w.shape
-  stride, pad = conv_param['stride'], conv_param['pad']
-  H_out = int(1 + (H + 2 * pad - HH) / stride)
-  W_out = int(1 + (W + 2 * pad - WW) / stride)
-  
-  x_pad = np.pad(
-      array=x,
-      pad_width=[
-          (0,),  # no pad for N
-          (0,),  # no pad for C
-          (pad,),
-          (pad,),
-      ],
-      mode='constant',
-      constant_values=0,
-  )
-  dx = np.zeros_like(x)
-  dx_pad = np.zeros_like(x_pad)
-  dw = np.zeros_like(w)
-  
-  # returns weights biase derivative - per kernel
-  db = np.sum(
-    dout,
-    axis=(
-      0, # num samples
-      2, # width
-      3, # height
-    ),
-  )
-  
-  for i in range(H_out):
-      for j in range(W_out):
-          i_start = i*stride
-          i_end = i_start + HH
-          j_start = j*stride
-          j_end = j*stride+WW
+  for f in range(0,F): # on the filter dimension
+        for c in range(0,C): # on the number of channels
+            for k in range(0,W_dash): #along width of out
+                for l in range(0,H_dash):  #along height of out
+                    for n in range(0,N):
+                        # out[n,f,k,l] += np.sum(x_new[n,c,k*stride:k*stride+WW,l*stride:l*stride+HH]*w[f,c,:,:])
+                        dw[f,c,:,:] += dout[n,f,k,l]*x_new[n,c,k*stride:k*stride+WW,l*stride:l*stride+HH]
+  for n in range(0,N):
+      for f in range(0,F): # on the filter dimension
+          for k in range(0,W_dash): #along width of out
+            for l in range(0,H_dash):  #along height of out
+                for c in range(0,C): # on the number of channels
+                    dx[n, c, k*stride:k*stride+WW, l*stride:l*stride+HH] += dout[n,f,k,l]*w[f,c,:,:]
+  dx = dx[:,:,1:-1,1:-1]
+  db = np.sum(np.transpose(dout, [1,0,2,3]), axis = (1,2,3))
 
-          x_pad_mask = x_pad[:, :, i_start:i_end, j_start:j_end]
-          for k in range(F): #compute dw
-              local_dout = dout[:, k, i, j]
-
-              # reshape so boradcast will work
-              local_dout = local_dout.reshape(
-                -1, # num samples
-                1, # channel
-                1, # i
-                1 # j
-              )
-              scalar_mul = x_pad_mask * local_dout
-              # print('scalar_mul, ', scalar_mul.shape)
-
-              # sum for all samples
-              res = np.sum(
-                scalar_mul,
-                axis=0,
-              )
-              dw[k ,: ,: ,:] += res
-          for n in range(N): #compute dx_pad
-              ndout_kernels = dout[n, :, i, j]
-              assert ndout_kernels.shape == (F,)
-              # reshape so brodcast will work
-              ndout_kernels = ndout_kernels.reshape(
-                -1, # F -  kernel
-                1, # channel
-                1, # HH
-                1, # WW
-              )
-              
-              ndx_sum = np.sum(
-                  w * ndout_kernels,
-                axis=0,
-              )
-              dx_pad[
-                n,
-                :, # all channels
-                i_start:i_end,
-                j_start:j_end,
-              ] += ndx_sum
-  dx = dx_pad[
-    :, 
-    :,
-    pad:-pad, # remove padding
-    pad:-pad,  # remove padding
-  ]
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
   return dx, dw, db
 
-
-from .im2col import im2col_indices, col2im_indices
-
+# from .im2col import im2col_indices, col2im_indices
 # def conv_forward_naive_shaked(x, w, b, conv_param):
 #   N, C, H, W   = x.shape
 #   F, _, HH, WW = w.shape
