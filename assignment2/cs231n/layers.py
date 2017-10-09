@@ -428,8 +428,8 @@ def conv_forward_naive(x, w, b, conv_param):
         for j in range(W_dash):
           current_sum = 0
           for c in range(C):
-            # current_sum += conv_naive(n,c,i,j,k,w,HH,WW,stride, x_pad)
-            current_sum += conv_vectorized(n,c,i,j,k,w,HH,WW,stride, x_pad)
+            current_sum += conv_naive(n,c,i,j,k,w,HH,WW,stride, x_pad)
+            # current_sum += conv_vectorized(n,c,i,j,k,w,HH,WW,stride, x_pad)
 
           out[n,k,i,j] = current_sum + b[k]
 
@@ -515,14 +515,15 @@ def conv_backward_naive(dout, cache):
             j_end = j_start + WW
             i_start = i * stride
             i_end = i_start + HH
-            
+            map_slice = np.s_[n, c, i_start:i_end, j_start:j_end]
+
             # dw derivative
-            x_map = x_new[n, c, i_start:i_end, j_start:j_end]
+            x_map = x_new[map_slice]
             dw[k, c, :, :] += dout_cell * x_map
 
             # dx derivative
-            kernel = w[k,c,:,:]
-            dx_pad[n, c, i_start:i_end, j_start:j_end] += dout_cell * kernel  
+            w_kernel = w[k,c,:,:]
+            dx_pad[map_slice] += dout_cell * w_kernel
 
   dx = dx_pad[
     :,
@@ -563,12 +564,14 @@ def max_pool_forward_naive(x, pool_param):
   N, C, H, W = x.shape
   HH, WW, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
   H_out = (H-HH)/stride+1
+  H_out = int(H_out)
   W_out = (W-WW)/stride+1
+  W_out = int(W_out)
   out = np.zeros((N,C,H_out,W_out))
   for i in range(H_out):
-        for j in range(W_out):
-            x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
-            out[:,:,i,j] = np.max(x_masked, axis=(2,3)) 
+      for j in range(W_out):
+          x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
+          out[:,:,i,j] = np.max(x_masked, axis=(2,3)) 
   #pass
   #############################################################################
   #                             END OF YOUR CODE                              #
