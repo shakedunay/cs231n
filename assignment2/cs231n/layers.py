@@ -507,10 +507,16 @@ def conv_backward_naive(dout, cache):
   
   for n in range(N):
     for k in range(F):
-      for j in range(W_dash):
-        for i in range(H_dash):
-            for c in range(C):
-                dx[n, c, j*stride:j*stride+WW, i*stride:i*stride+HH] += dout[n,k,j,i]*w[k,c,:,:]
+      for i in range(H_dash):          
+        for j in range(W_dash):
+          for c in range(C):
+            j_start = j*stride
+            j_end = j_start + WW
+            i_start = i*stride
+            i_end = i_start + HH
+            kernel = w[k,c,:,:]
+            dout_cell = dout[n,k,j,i]
+            dx[n, c, j_start:j_end, i_start:i_end] += dout_cell * kernel
 
   dx = dx[:,:,1:-1,1:-1]
   db = np.sum(np.transpose(dout, [1,0,2,3]), axis = (1,2,3))
