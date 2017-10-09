@@ -628,40 +628,29 @@ def max_pool_backward_naive(dout, cache):
   # where = np.nonzero(mask!=0)
   # dx[where[0], where[1], where[2], where[3]] = np.ravel(dout)
   
-  for i in range(H_out):
-     for j in range(W_out):
-        i_start = i * stride
-        i_end = i_start + HH
-        j_start = j * stride
-        j_end = j_start + WW
-        x_masked = x[
-          :,
-          :,
-          i_start:i_end,
-          j_start:j_end,
-        ]
-        max_x_masked = np.max(x_masked,axis=(2,3))
-        temp_binary_mask = (x_masked == (max_x_masked)[:,:,None,None])
-        dx[:,:,i_start: i_end, j_start: j_end] += temp_binary_mask * (dout[:,:,i,j])[:,:,None,None]
-  # for n in range(N):
-  #   for c in range(C):
-  #     for i in range(H_out):
-  #       for j in range(W_out):
-  #         idx = np.s_[n, c, i, j]
-  #         if mask[idx]:
-  #           dx[idx] += x[idx]
-          # i_start = i * stride
-          # i_end = i_start + HH
-          # j_start = j * stride
-          # j_end = j_start + HH
-          # n,c,
-  # for i in range(H_out):
-  #    for j in range(W_out):
-  #       x_masked = x[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW]
-  #       max_x_masked = np.max(x_masked,axis=(2,3))
-  #       temp_binary_mask = (x_masked == (max_x_masked)[:,:,None,None])
-  #       dx[:,:,i*stride : i*stride+HH, j*stride : j*stride+WW] += temp_binary_mask * (dout[:,:,i,j])[:,:,None,None]
-  #pass
+  for n in range(N):
+    for c in range(C):
+      for i in range(H_out):
+        for j in range(W_out):
+          i_start = i * stride
+          i_end = i_start + HH
+          j_start = j * stride
+          j_end = j_start + WW
+          x_masked = x[
+            n,
+            c,
+            i_start:i_end,
+            j_start:j_end,
+          ]
+          local_mask = mask[
+            n,
+            c,
+            i_start:i_end,
+            j_start:j_end,
+          ]
+          
+          dout_mask = local_mask * dout[n,c,i,j]
+          dx[n, c, i_start: i_end, j_start: j_end] += dout_mask
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
