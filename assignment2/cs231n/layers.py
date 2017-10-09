@@ -411,7 +411,7 @@ def conv_forward_naive(x, w, b, conv_param):
   # TODO: Implement the convolutional forward pass.                           #
   # Hint: you can use the function np.pad for padding.                        #
   #############################################################################
-  x_new = np.pad(
+  x_pad = np.pad(
     array=x,
     pad_width=[
         (0,), # no pad for N 
@@ -428,21 +428,8 @@ def conv_forward_naive(x, w, b, conv_param):
         for j in range(W_dash):
           current_sum = 0
           for c in range(C):
-            j_start = j * stride
-            j_end = j_start + WW
-            i_start = i * stride
-            i_end = i_start + HH
-
-            x_new_window = x_new[
-              n,
-              c,  
-              i_start:i_end,
-              j_start:j_end,
-            ]
-            kernel = w[k,c,:,:]
-            current_sum += np.sum(
-              x_new_window * kernel,
-            )
+            # current_sum += conv_naive(n,c,i,j,k,w,HH,WW,stride, x_pad)
+            current_sum += conv_vectorized(n,c,i,j,k,w,HH,WW,stride, x_pad)
 
           out[n,k,i,j] = current_sum + b[k]
 
@@ -451,6 +438,33 @@ def conv_forward_naive(x, w, b, conv_param):
   #############################################################################
   cache = (x, w, b, conv_param)
   return out, cache
+
+
+def conv_naive(n, c, i, j, k, w, HH, WW, stride, x_pad):
+  current_sum = 0
+  for hh in range(HH):
+    for ww in range(WW):
+      x_cell = x_pad[n,c,i*stride+hh, j*stride+ww]
+      w_cell = w[k,c,hh,ww]
+      current_sum += x_cell * w_cell
+  return current_sum
+
+def conv_vectorized(n, c, i, j, k, w, HH, WW, stride, x_pad):
+  j_start = j * stride
+  j_end = j_start + WW
+  i_start = i * stride
+  i_end = i_start + HH
+
+  x_pad_window = x_pad[
+    n,
+    c,  
+    i_start:i_end,
+    j_start:j_end,
+  ]
+  kernel = w[k,c,:,:]
+  return np.sum(
+    x_pad_window * kernel,
+  )
 
 def conv_backward_naive(dout, cache):
   """
@@ -514,7 +528,7 @@ def conv_backward_naive(dout, cache):
     :,
     :,
     pad:-pad, # remove padding
-    pad:-pad # remove padding
+    pad:-pad  # remove padding
   ]
   db = np.sum(
       dout,
