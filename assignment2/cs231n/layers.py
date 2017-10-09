@@ -628,29 +628,27 @@ def max_pool_backward_naive(dout, cache):
   # where = np.nonzero(mask!=0)
   # dx[where[0], where[1], where[2], where[3]] = np.ravel(dout)
   
-  for n in range(N):
-    for c in range(C):
-      for i in range(H_out):
-        for j in range(W_out):
-          i_start = i * stride
-          i_end = i_start + HH
-          j_start = j * stride
-          j_end = j_start + WW
-          x_masked = x[
-            n,
-            c,
-            i_start:i_end,
-            j_start:j_end,
-          ]
-          local_mask = mask[
-            n,
-            c,
-            i_start:i_end,
-            j_start:j_end,
-          ]
-          
-          dout_mask = local_mask * dout[n,c,i,j]
-          dx[n, c, i_start: i_end, j_start: j_end] += dout_mask
+  for i in range(H_out):
+    for j in range(W_out):
+      i_start = i * stride
+      i_end = i_start + HH
+      j_start = j * stride
+      j_end = j_start + WW
+      local_mask = mask[
+        :,
+        :,
+        i_start:i_end,
+        j_start:j_end,
+      ]
+      local_dout = dout[:, :, i, j]
+      dount_c = local_dout[
+        :,
+        :,
+        np.newaxis,
+        np.newaxis,
+      ]
+      dout_mask = local_mask * dount_c
+      dx[:, :, i_start: i_end, j_start: j_end] += dout_mask
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
