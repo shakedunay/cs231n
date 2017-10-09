@@ -486,9 +486,9 @@ def conv_backward_naive(dout, cache):
       mode='constant',
       constant_values=0,
   )
-  dx = np.zeros(x_new.shape)
+  dx_pad = np.zeros(x_new.shape)
 
-  #############################################################################
+  ##_pad###########################################################################
   # TODO: Implement the convolutional backward pass.                          #
   #############################################################################
   for n in range(N):
@@ -503,15 +503,27 @@ def conv_backward_naive(dout, cache):
             i_end = i_start + HH
             
             # dw derivative
-            x_map = x_new[n,c,i_start:i_end, j_start:j_end]
-            dw[k,c,:,:] += dout_cell * x_map
+            x_map = x_new[n, c, i_start:i_end, j_start:j_end]
+            dw[k, c, :, :] += dout_cell * x_map
 
             # dx derivative
             kernel = w[k,c,:,:]
-            dx[n, c, i_start:i_end, j_start:j_end] += dout_cell * kernel  
+            dx_pad[n, c, i_start:i_end, j_start:j_end] += dout_cell * kernel  
 
-  dx = dx[:,:,1:-1,1:-1]
-  db = np.sum(np.transpose(dout, [1,0,2,3]), axis = (1,2,3))
+  dx = dx_pad[
+    :,
+    :,
+    pad:-pad,
+    pad:-pad
+  ]
+  db = np.sum(
+      dout,
+      axis=(
+          0,  # num samples
+          2,  # width
+          3,  # height
+      ),
+  )
 
   return dx, dw, db
 
