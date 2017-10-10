@@ -104,18 +104,24 @@ class ThreeLayerConvNet(object):
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
-        conv_out, conv_cache = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
-        ar2_out, ar2_cache = affine_relu_forward(
-            conv_out,
-            self.params['W2'],
-            self.params['b2'],
+        l1_out, l1_cache = conv_relu_pool_forward(
+            x=X,
+            w=W1,
+            b=b1,
+            conv_param=conv_param,
+            pool_param=pool_param,
         )
-        a3_out, a3_cache = affine_forward(
-            ar2_out,
-            self.params['W3'],
-            self.params['b3'],
+        l2_out, l2_cache = affine_relu_forward(
+            x=l1_out,
+            w=self.params['W2'],
+            b=self.params['b2'],
         )
-        scores = a3_out
+        l3_out, l3_cache = affine_forward(
+            x=l2_out,
+            w=self.params['W3'],
+            b=self.params['b3'],
+        )
+        scores = l3_out
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -133,22 +139,29 @@ class ThreeLayerConvNet(object):
         loss, dscores = softmax_loss(scores, y)
         # regularization
         loss = loss + 0.5 * self.reg * \
-            np.sum(self.params['W1'] **2) + 0.5 * \
-            self.reg * np.sum(self.params['W2'] ** 2) + 0.5 * \
-            self.reg * np.sum(self.params['W3'] ** 2)
+            (np.sum(W1**2) + np.sum(W2**2) + np.sum(W3**2))
         
-        # print('x')                              
-        # dx3, dw3, db3 = conv_relu_pool_backward(dscores, conv_cache)
-        # grads['W3'] = dw3 + self.reg * self.params['W3']
-        # grads['b3'] = db3
+        dx3, dw3, db3 = affine_backward(
+            dout=dscores,
+            cache=l3_cache,
+        )
+         
+        grads['W3'] = dw3 + self.reg * self.params['W3']
+        grads['b3'] = db3
 
-        # dx2, dw2, db2 = affine_relu_backward(dx3, ar2_cache)
-        # grads['W2'] = dw2 + self.reg * self.params['W2']
-        # grads['b2'] = db2
+        dx2, dw2, db2 = affine_relu_backward(
+            dout=dx3,
+            cache=l2_cache,
+        )
+        grads['W2'] = dw2 + self.reg * self.params['W2']
+        grads['b2'] = db2
 
-        # dx1, dw1, db1 = affine_backward(dx2, a3_cache)
-        # grads['W1'] = dw1 + self.reg * self.params['W1']
-        # grads['b1'] = db1
+        dx1, dw1, db1 = conv_relu_pool_backward(
+            dout=dx2,
+            cache=l1_cache,
+        )
+        grads['W1'] = dw1 + self.reg * self.params['W1']
+        grads['b1'] = db1
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
