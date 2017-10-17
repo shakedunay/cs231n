@@ -687,8 +687,24 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   # be very short; ours is less than five lines.                              #
   #############################################################################
   N, C, H, W = x.shape
-  temp_output, cache = batchnorm_forward(x.transpose(0,3,2,1).reshape((N*H*W,C)), gamma, beta, bn_param)
-  out = temp_output.reshape(N,W,H,C).transpose(0,3,2,1)
+  x_reshaped = x.transpose(
+    0, # N 
+    3, # H
+    2, # W
+    1, # C
+  ).reshape((N*H*W,C))
+  print('x, ', x.shape)
+  print('x_reshaped, ', x_reshaped.shape)
+  temp_output, cache = batchnorm_forward(x_reshaped, gamma, beta, bn_param)
+
+
+  out = temp_output.reshape(N,W,H,C)
+  out = out.transpose(
+    0, # N
+    3, # C
+    2, # H
+    1, # W
+  )
   #pass
   #############################################################################
   #                             END OF YOUR CODE                              #
@@ -720,9 +736,30 @@ def spatial_batchnorm_backward(dout, cache):
   # be very short; ours is less than five lines.                              #
   #############################################################################
   N,C,H,W = dout.shape
-  dx_temp, dgamma, dbeta = batchnorm_backward_alt(dout.transpose(0,3,2,1).reshape((N*H*W,C)),cache)
-  dx = dx_temp.reshape(N,W,H,C).transpose(0,3,2,1)
-  #pass
+  dout_reshape = dout.transpose(
+    0, # N
+    3, # W
+    2, # H
+    1, # C 
+  ).reshape(
+      (N * H * W, C)
+  )
+    
+  dx_temp, dgamma, dbeta = batchnorm_backward_alt(
+    dout_reshape,
+    cache
+  )
+  dx = dx_temp.reshape(
+    N,
+    W,
+    H,
+    C,
+  ).transpose(
+    0, # N
+    3, # C
+    2, # H
+    1, # W
+  )
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################

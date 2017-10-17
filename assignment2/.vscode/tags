@@ -42,19 +42,19 @@ col2im_indices	../cs231n/im2col.py	/^def col2im_indices(cols, x_shape, field_hei
 conv_backward_fast	../cs231n/fast_layers.py	/^conv_backward_fast = conv_backward_strides$/;"	kind:variable	line:130
 conv_backward_im2col	../cs231n/fast_layers.py	/^def conv_backward_im2col(dout, cache):$/;"	kind:function	line:107
 conv_backward_naive	../cs231n/layers.1.py	/^def conv_backward_naive(dout, cache):$/;"	kind:function	line:453
-conv_backward_naive	../cs231n/layers.py	/^def conv_backward_naive(dout, cache):$/;"	kind:function	line:457
-conv_backward_naive_	../cs231n/layers.py	/^def conv_backward_naive_(dout, cache):$/;"	kind:function	line:595
+conv_backward_naive	../cs231n/layers.py	/^def conv_backward_naive(dout, cache):$/;"	kind:function	line:469
 conv_backward_strides	../cs231n/fast_layers.py	/^def conv_backward_strides(dout, cache):$/;"	kind:function	line:87
 conv_forward_fast	../cs231n/fast_layers.py	/^conv_forward_fast = conv_forward_strides$/;"	kind:variable	line:129
 conv_forward_im2col	../cs231n/fast_layers.py	/^def conv_forward_im2col(x, w, b, conv_param):$/;"	kind:function	line:14
 conv_forward_naive	../cs231n/layers.1.py	/^def conv_forward_naive(x, w, b, conv_param):$/;"	kind:function	line:412
 conv_forward_naive	../cs231n/layers.py	/^def conv_forward_naive(x, w, b, conv_param):$/;"	kind:function	line:380
-conv_forward_naive_	../cs231n/layers.py	/^def conv_forward_naive_(x, w, b, conv_param):$/;"	kind:function	line:547
 conv_forward_strides	../cs231n/fast_layers.py	/^def conv_forward_strides(x, w, b, conv_param):$/;"	kind:function	line:43
+conv_naive	../cs231n/layers.py	/^def conv_naive(n, c, i, j, k, w, HH, WW, stride, x_pad):$/;"	kind:function	line:443
 conv_relu_backward	../cs231n/layer_utils.py	/^def conv_relu_backward(dout, cache):$/;"	kind:function	line:70
 conv_relu_forward	../cs231n/layer_utils.py	/^def conv_relu_forward(x, w, b, conv_param):$/;"	kind:function	line:52
 conv_relu_pool_backward	../cs231n/layer_utils.py	/^def conv_relu_pool_backward(dout, cache):$/;"	kind:function	line:100
 conv_relu_pool_forward	../cs231n/layer_utils.py	/^def conv_relu_pool_forward(x, w, b, conv_param, pool_param):$/;"	kind:function	line:80
+conv_vectorized	../cs231n/layers.py	/^def conv_vectorized(n, c, i, j, k, w, HH, WW, stride, x_pad):$/;"	kind:function	line:452
 data_utils.py	../cs231n/data_utils.py	1;"	kind:file	line:1
 dropout_backward	../cs231n/layers.1.py	/^def dropout_backward(dout, cache):$/;"	kind:function	line:387
 dropout_backward	../cs231n/layers.py	/^def dropout_backward(dout, cache):$/;"	kind:function	line:354
@@ -87,18 +87,18 @@ load_imagenet_val	../cs231n/data_utils.py	/^def load_imagenet_val(num=None):$/;"
 load_models	../cs231n/data_utils.py	/^def load_models(models_dir):$/;"	kind:function	line:214
 load_pickle	../cs231n/data_utils.py	/^def load_pickle(f):$/;"	kind:function	line:10
 load_tiny_imagenet	../cs231n/data_utils.py	/^def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):$/;"	kind:function	line:86
-loss	../cs231n/classifiers/cnn.py	/^    def loss(self, X, y=None):$/;"	kind:member	line:60
+loss	../cs231n/classifiers/cnn.py	/^    def loss(self, X, y=None):$/;"	kind:member	line:84
 loss	../cs231n/classifiers/fc_net.py	/^  def loss(self, X, y=None):$/;"	kind:member	line:226
 loss	../cs231n/classifiers/fc_net.py	/^  def loss(self, X, y=None):$/;"	kind:member	line:57
 max_pool_backward_fast	../cs231n/fast_layers.py	/^def max_pool_backward_fast(dout, cache):$/;"	kind:function	line:157
 max_pool_backward_im2col	../cs231n/fast_layers.py	/^def max_pool_backward_im2col(dout, cache):$/;"	kind:function	line:252
 max_pool_backward_naive	../cs231n/layers.1.py	/^def max_pool_backward_naive(dout, cache):$/;"	kind:function	line:504
-max_pool_backward_naive	../cs231n/layers.py	/^def max_pool_backward_naive(dout, cache):$/;"	kind:function	line:650
+max_pool_backward_naive	../cs231n/layers.py	/^def max_pool_backward_naive(dout, cache):$/;"	kind:function	line:604
 max_pool_backward_reshape	../cs231n/fast_layers.py	/^def max_pool_backward_reshape(dout, cache):$/;"	kind:function	line:194
 max_pool_forward_fast	../cs231n/fast_layers.py	/^def max_pool_forward_fast(x, pool_param):$/;"	kind:function	line:133
 max_pool_forward_im2col	../cs231n/fast_layers.py	/^def max_pool_forward_im2col(x, pool_param):$/;"	kind:function	line:225
 max_pool_forward_naive	../cs231n/layers.1.py	/^def max_pool_forward_naive(x, pool_param):$/;"	kind:function	line:477
-max_pool_forward_naive	../cs231n/layers.py	/^def max_pool_forward_naive(x, pool_param):$/;"	kind:function	line:614
+max_pool_forward_naive	../cs231n/layers.py	/^def max_pool_forward_naive(x, pool_param):$/;"	kind:function	line:546
 max_pool_forward_reshape	../cs231n/fast_layers.py	/^def max_pool_forward_reshape(x, pool_param):$/;"	kind:function	line:173
 optim.py	../cs231n/optim.py	1;"	kind:file	line:1
 relu_backward	../cs231n/layers.1.py	/^def relu_backward(dout, cache):$/;"	kind:function	line:104
@@ -110,14 +110,14 @@ setup.py	../cs231n/setup.py	1;"	kind:file	line:1
 sgd	../cs231n/optim.py	/^def sgd(w, dw, config=None):$/;"	kind:function	line:33
 sgd_momentum	../cs231n/optim.py	/^def sgd_momentum(w, dw, config=None):$/;"	kind:function	line:47
 softmax_loss	../cs231n/layers.1.py	/^def softmax_loss(x, y):$/;"	kind:function	line:622
-softmax_loss	../cs231n/layers.py	/^def softmax_loss(x, y):$/;"	kind:function	line:787
+softmax_loss	../cs231n/layers.py	/^def softmax_loss(x, y):$/;"	kind:function	line:797
 solver.py	../cs231n/solver.py	1;"	kind:file	line:1
 spatial_batchnorm_backward	../cs231n/layers.1.py	/^def spatial_batchnorm_backward(dout, cache):$/;"	kind:function	line:565
-spatial_batchnorm_backward	../cs231n/layers.py	/^def spatial_batchnorm_backward(dout, cache):$/;"	kind:function	line:727
+spatial_batchnorm_backward	../cs231n/layers.py	/^def spatial_batchnorm_backward(dout, cache):$/;"	kind:function	line:716
 spatial_batchnorm_forward	../cs231n/layers.1.py	/^def spatial_batchnorm_forward(x, gamma, beta, bn_param):$/;"	kind:function	line:526
-spatial_batchnorm_forward	../cs231n/layers.py	/^def spatial_batchnorm_forward(x, gamma, beta, bn_param):$/;"	kind:function	line:685
+spatial_batchnorm_forward	../cs231n/layers.py	/^def spatial_batchnorm_forward(x, gamma, beta, bn_param):$/;"	kind:function	line:658
 svm_loss	../cs231n/layers.1.py	/^def svm_loss(x, y):$/;"	kind:function	line:595
-svm_loss	../cs231n/layers.py	/^def svm_loss(x, y):$/;"	kind:function	line:760
+svm_loss	../cs231n/layers.py	/^def svm_loss(x, y):$/;"	kind:function	line:770
 train	../cs231n/solver.py	/^    def train(self):$/;"	kind:member	line:257
 vis_grid	../cs231n/vis_utils.py	/^def vis_grid(Xs):$/;"	kind:function	line:41
 vis_nn	../cs231n/vis_utils.py	/^def vis_nn(rows):$/;"	kind:function	line:59
