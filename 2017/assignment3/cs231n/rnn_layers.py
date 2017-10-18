@@ -185,7 +185,8 @@ def rnn_backward(dh, cache):
         current_dh = dh[time_t_idx]
         current_dx = dx[time_t_idx]
         
-        dnext_h = current_dh + dprev_h   # ???
+        # get gradients from both arrows from the computational graph of RNN
+        dnext_h = current_dh + dprev_h
 
         current_dx, dprev_h, dWxU, dWhU, dbU = rnn_step_backward(
             dnext_h,
@@ -230,15 +231,21 @@ def word_embedding_forward(x, W):
     ##############################################################################
     N, T = x.shape
     V, D = W.shape
-    out = np.zeros((N, T, D))
 
-    # for d in D:
-        # out[:,:,d] = 
-    for n in range(N):
-        for t in range(T):
-            word_id = x[n,t]
-            vec = W[word_id]
-            out[n,t] = vec
+    # good but complex
+    all_N_all_word_idx = np.s_[:, :]
+    out = W[x[all_N_all_word_idx]]
+    assert out.shape == (N, T, D)
+
+    # simple
+    # out = np.zeros((N, T, D))
+    # for n in range(N):
+    #     for t in range(T):
+    #         for d in range(D):
+    #            word_id = x[n, t] 
+    #            out[n,t,d] = W[word_id,d]
+
+    cache = x, W
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -267,7 +274,17 @@ def word_embedding_backward(dout, cache):
     # Note that Words can appear more than once in a sequence.                   #
     # HINT: Look up the function np.add.at                                       #
     ##############################################################################
-    pass
+    x, W = cache
+
+    N, T, D = dout.shape
+    V, _ = W.shape
+    dW = np.zeros((V,D))
+
+    all_N_all_T = np.s_[:,:]
+    all_words_ids = x[all_N_all_T]
+    np.add.at(dW, all_words_ids, dout)
+
+    assert dW.shape == (V,D)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
