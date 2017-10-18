@@ -70,13 +70,17 @@ def rnn_step_backward(dnext_h, cache):
     _, H = dnext_h.shape
 
     dout = dnext_h
-    dtanh = (1 - next_h**2) * dnext_h
+
+    # next_h = np.tanh(x @ Wx + prev_h @ Wh + b)     
+    dtanh = (1 - next_h**2) * dout
     
     dx = dtanh @ Wx.T
+    
     dWx = x.T @ dtanh
 
-    dWh = prev_h.T @ dtanh
     dprev_h = dtanh @ Wh.T
+    
+    dWh = prev_h.T @ dtanh
     
     db = np.sum(dtanh, axis=0)
 
@@ -116,21 +120,18 @@ def rnn_forward(x, h0, Wx, Wh, b):
     # input data. You should use the rnn_step_forward function that you defined  #
     # above. You can use a for loop to help compute the forward pass.            #
     ##############################################################################
-    prev_h = h0
+    N, T, D = x.shape
+    _ ,H = Wx.shape
     h = np.zeros((N, T, H))
-    
-    forward_cache = dict()
+    all_prev_h = np.zeros((N, T, H))
+    prev_h = h0
     for t in range(T):
-        x_t = x[:,t,:]
-        
-        current_h, current_cache = rnn_step_forward(x_t, prev_h, Wx, Wh, b)
-        key = 't' + str(t+1)
-        forward_cache[key] = current_cache
-        h[:, t, :] = current_h
-        prev_h = current_h
-    
-    h[:, t, :] = prev_h
-    cache = x, forward_cache
+        time_t_idx = np.s_[: , t, :]
+        all_prev_h[time_t_idx] = prev_h
+        next_h, cache = rnn_step_forward(x[time_t_idx], prev_h, Wx, Wh, b)
+        prev_h = next_h
+        h[time_t_idx] = next_h
+    cache = (x, all_prev_h, Wx, Wh, b, h)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -157,27 +158,49 @@ def rnn_backward(dh, cache):
     # sequence of data. You should use the rnn_step_backward function that you   #
     # defined above. You can use a for loop to help compute the backward pass.   #
     ##############################################################################
-    x, forward_cache = cache
+    x, all_prev_h, Wx, Wh, b, h = cache
     N, T, D = x.shape
-    _, _, H = dh.shape
+    _ ,H = Wx.shape
+    dx = np.zeros(x.shape)
+    dWx = np.zeros(Wx.shape)
+    dWh = np.zeros(Wh.shape)
+    db = np.zeros(b.shape)
+    dprev_h = np.zeros((N, H))
 
-    dx = np.zeros((N,T,D))
-    dh0 = np.zeros((N,H))
-    dWx = np.zeros((D,H))
-    dWh = np.zeros((H, H))
-    db = np.zeros((H,))
-
+    # Backpropagation Through Time - BPTT
     for t in reversed(range(T)):
-        dnext_h = dh[:,t,:]
-        key = 't' + str(t + 1)
-        cache = forward_cache[key]
-        t_dx, t_dprev_h, t_dWx, t_dWh, t_db = rnn_step_backward(dnext_h, cache)
+        time_t_idx = np.s_[:,t,:]
+        current_x = x[time_t_idx]
+        current_prev_h = all_prev_h[time_t_idx]
+        current_h = h[time_t_idx]
+        current_cache = (
+            current_x,
+            current_prev_h,
+            Wx,
+            Wh,
+            b,
+            current_h,
+        )
 
-        db += t_db
-        dx[:,t,] += t_dx
-        dWx += t_dWx
-        dWh += t_dWh
-        dh0 += t_dprev_h
+        current_dh = dh[time_t_idx]
+        current_dx = dx[time_t_idx]
+        
+        dnext_h = current_dh + dprev_h   # ???
+
+        current_dx, dprev_h, dWxU, dWhU, dbU = rnn_step_backward(
+            dnext_h,
+            current_cache,
+        )
+
+        # update derivatives
+        dx[time_t_idx] = current_dx
+        db += dbU
+        dWx += dWxU
+        dWh += dWhU
+
+    dh0 = dprev_h
+    assert dh0.shape == (N, H)
+
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -205,7 +228,17 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This can be done in one line using NumPy's array indexing.           #
     ##############################################################################
-    pass
+    N, T = x.shape
+    V, D = W.shape
+    out = np.zeros((N, T, D))
+
+    # for d in D:
+        # out[:,:,d] = 
+    for n in range(N):
+        for t in range(T):
+            word_id = x[n,t]
+            vec = W[word_id]
+            out[n,t] = vec
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
