@@ -169,46 +169,50 @@ def rnn_backward(dh, cache):
     dWx = np.zeros(Wx.shape)
     dWh = np.zeros(Wh.shape)
     db = np.zeros(b.shape)
-    dprev_h = np.zeros((N, H))
+    
+    time_t_plus_1_dprev_h = np.zeros((N, H))
 
     # Backpropagation Through Time - BPTT
     for t in reversed(range(T)):
         time_t_idx = np.s_[:,t,:]
-        current_x = x[time_t_idx]
+        time_t_x = x[time_t_idx]
+
         if t == 0:
-            current_prev_h = h0
+            time_t_prev_h = h0
         else:
             time_prev_t_idx = np.s_[:, t-1, :]
-            current_prev_h = h[time_prev_t_idx]
+            time_t_prev_h = h[time_prev_t_idx]
         
-        current_h = h[time_t_idx]
-        current_cache = (
-            current_x,
-            current_prev_h,
+        time_t_next_h = h[time_t_idx]
+        time_t_cache = (
+            time_t_x,
+            time_t_prev_h,
             Wx,
             Wh,
             b,
-            current_h,
+            time_t_next_h,
         )
 
-        current_dh = dh[time_t_idx]
-        current_dx = dx[time_t_idx]
-        
-        # get gradients from both arrows from the computational graph of RNN
-        dnext_h = current_dh + dprev_h
+        time_t_dh = dh[time_t_idx]
 
-        current_dx, dprev_h, dWxU, dWhU, dbU = rnn_step_backward(
-            dnext_h,
-            current_cache,
+        # get gradients from both arrows from the computational graph of RNN(next_h + current activation)
+        time_t_dnext_h = time_t_dh + time_t_plus_1_dprev_h
+
+        time_t_dx, time_t_dprev_h, time_t_WxU, time_t_dWh, time_t_db = rnn_step_backward(
+            time_t_dnext_h,
+            time_t_cache,
         )
 
-        # update derivatives
-        dx[time_t_idx] = current_dx
-        db += dbU
-        dWx += dWxU
-        dWh += dWhU
+        # aggregate gradients(creceived through time)
+        dx[time_t_idx] = time_t_dx
+        db += time_t_db
+        dWx += time_t_WxU
+        dWh += time_t_dWh
 
-    dh0 = dprev_h
+        # for next iteration
+        time_t_plus_1_dprev_h = time_t_dprev_h
+
+    dh0 = time_t_plus_1_dprev_h
     assert dh0.shape == (N, H)
 
     ##############################################################################
