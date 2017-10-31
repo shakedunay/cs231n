@@ -123,15 +123,19 @@ def rnn_forward(x, h0, Wx, Wh, b):
     N, T, D = x.shape
     _ ,H = Wx.shape
     h = np.zeros((N, T, H))
-    all_prev_h = np.zeros((N, T, H))
     prev_h = h0
     for t in range(T):
         time_t_idx = np.s_[: , t, :]
-        all_prev_h[time_t_idx] = prev_h
-        next_h, cache = rnn_step_forward(x[time_t_idx], prev_h, Wx, Wh, b)
+        next_h, cache = rnn_step_forward(
+            x[time_t_idx],
+            prev_h,
+            Wx,
+            Wh,
+            b,
+        )
         prev_h = next_h
         h[time_t_idx] = next_h
-    cache = (x, all_prev_h, Wx, Wh, b, h)
+    cache = (x, h0, Wx, Wh, b, h)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -158,7 +162,7 @@ def rnn_backward(dh, cache):
     # sequence of data. You should use the rnn_step_backward function that you   #
     # defined above. You can use a for loop to help compute the backward pass.   #
     ##############################################################################
-    x, all_prev_h, Wx, Wh, b, h = cache
+    x, h0, Wx, Wh, b, h = cache
     N, T, D = x.shape
     _ ,H = Wx.shape
     dx = np.zeros(x.shape)
@@ -171,7 +175,12 @@ def rnn_backward(dh, cache):
     for t in reversed(range(T)):
         time_t_idx = np.s_[:,t,:]
         current_x = x[time_t_idx]
-        current_prev_h = all_prev_h[time_t_idx]
+        if t == 0:
+            current_prev_h = h0
+        else:
+            time_prev_t_idx = np.s_[:, t-1, :]
+            current_prev_h = h[time_prev_t_idx]
+        
         current_h = h[time_t_idx]
         current_cache = (
             current_x,
