@@ -13,7 +13,7 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     """
     Run the forward pass for a single timestep of a vanilla RNN that uses a tanh
     activation function.
-
+  
     The input data has dimension D, the hidden state has dimension H, and we use
     a minibatch size of N.
 
@@ -193,10 +193,9 @@ def rnn_backward(dh, cache):
             time_t_next_h,
         )
 
-        time_t_dh = dh[time_t_idx]
-
-        # get gradients from both arrows from the computational graph of RNN(next_h + current activation)
-        time_t_dnext_h = time_t_dh + time_t_plus_1_dprev_h
+        # get gradients from both arrows from the computational graph of RNN(arrow to hidden t+1 and arrow to output layer)
+        time_t_dh_for_output_layer = dh[time_t_idx]
+        time_t_dnext_h = time_t_dh_for_output_layer + time_t_plus_1_dprev_h
 
         time_t_dx, time_t_dprev_h, time_t_WxU, time_t_dWh, time_t_db = rnn_step_backward(
             time_t_dnext_h,

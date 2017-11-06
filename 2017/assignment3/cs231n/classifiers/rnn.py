@@ -145,40 +145,68 @@ class CaptioningRNN(object):
         # Wx (D,H)
         # 1 (N, H) affine
         
-        h0, h0_cache = affine_forward(
+
+        one_h0, one_h0_cache = affine_forward(
           x=features,
           w=W_proj,
           b=b_proj,
         )
 
         # assert one_affine.shape == (N, T, W)
-        embedding_out, embedding_cache = word_embedding_forward(
+        two_embedding_out, two_embedding_cache = word_embedding_forward(
           x=captions_in,
           W=W_embed,
         )
 
-        rnn_out, rnn_cache = rnn_forward(
-          x=embedding_out,
-          h0=h0,
+        three_rnn_out, three_rnn_cache = rnn_forward(
+          x=two_embedding_out,
+          h0=one_h0,
           Wx=Wx,
           Wh=Wh,
           b=b,
         )
         
-        temporal_out, temporal_cache = temporal_affine_forward(
-          x=rnn_out,
+        four_temporal_out, four_temporal_cache = temporal_affine_forward(
+          x=three_rnn_out,
           w=W_vocab,
           b=b_vocab,
         )
 
-        loss, dx = temporal_softmax_loss(
-          x=temporal_out,
+        loss, dout = temporal_softmax_loss(
+          x=four_temporal_out,
           y=captions_out,
           mask=mask,
           verbose=False,
         )
+        
+        d_four_out, d_four_w, d_four_b = temporal_affine_backward(
+          dout=dout,
+          cache=four_temporal_cache,
+        )
+        grads['W_vocab'] = d_four_w
+        grads['b_vocab'] = d_four_b
 
+        d_three_out, d_three_dh0, three_dWx, three_dWh, three_db = rnn_backward(
+          dh=d_four_out,
+          cache=three_rnn_cache,
+        )
+        grads['Wx'] = three_dWx
+        grads['Wh'] = three_dWh
+        grads['b'] = three_db
 
+        d_two_out = word_embedding_backward(
+          dout=d_three_out,
+          cache=two_embedding_cache,
+        )
+        grads['W_embed'] = d_two_out
+
+        one_dx, one_dw, one_db = affine_backward(
+          dout=d_three_dh0,
+          cache=one_h0_cache,
+        )
+        grads['W_proj'] = one_dw
+        grads['b_proj'] = one_db
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -240,7 +268,32 @@ class CaptioningRNN(object):
         # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
         # a loop.                                                                 #
         ###########################################################################
-        pass
+        one_h0, one_h0_cache = affine_forward(
+            x=features,
+            w=W_proj,
+            b=b_proj,
+        )
+
+        # assert one_affine.shape == (N, T, W)
+        two_embedding_out, two_embedding_cache = word_embedding_forward(
+            x=captions_in,
+            W=W_embed,
+        )
+        
+        current_token = self._start
+        for t in range(max_length):
+          embedding_out, embedding_cache = word_embedding_forward(
+              x=current_token,
+              W=W_embed,
+          )
+          rnn_step_forward(
+            x,
+            prev_h,
+            Wx,
+            Wh,
+            b
+          )
+        # pass
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
